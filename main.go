@@ -50,6 +50,60 @@ func buildGoogleUrls(searchTerm, countryCode,languageCode string,pages,count int
 	return toScrape,nil 
 }
 
+func googleResultParsing(response *http.Response Rank int)([]SearchResults error)  {
+doc,err := goquery.NewDocumentFromResponse(response)
+
+if err != nil {
+	return nil, err
+}
+
+results := []SearchResults{}
+sel:= doc.Find("div.g")
+rank++
+for i:= range sel.Nodes{
+	item:= sel.Eq(i)
+	linkTag:=item.Find("a")
+	link,_:=linkTag.Attr("href")
+	titleTag:= item.Find("h3.r")
+	descTag:= item.Find("span.st")
+	desc:= descTag.Text()
+	title:=titleTag.Text()
+	link = strings.Trim(link," ")
+
+	if link !- "" && link != "#"&& !strings.HasPrefix(link,"/"){
+		results:=SearchResults{
+			rank,
+			link,
+			title,
+			desc 
+		}
+		results = append(results, result)
+		rank++
+	}
+}
+return results, err
+
+
+}
+
+func getScrapeClient(proxyString interface{})*http.Client  {
+switch v:= proxyString.(type){
+
+case string:
+		proxyUrl,_ :=url.Parse(v)
+		return &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)}}
+default:
+	return &http.Client{
+		Transport: nil,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		},
+		Jar:     nil,
+		Timeout: 0,
+	}
+}
+}
+
+
 //google scraper
 func GoogleScraper(searchTerm, countryCode,languageCode string,pages,count,backoff)([]SearchResults, err)  {
 	results:=[]SearchResults{}
@@ -76,6 +130,7 @@ func GoogleScraper(searchTerm, countryCode,languageCode string,pages,count,backo
 		time.Sleep(time.Duration(backoff)*time.Second)
 	}
 }
+
 func scrapeClientRequest(searchURL string, proxyString interface{}) (*http.Response, error) {
 	baseClient := getScrapeClient(proxyString)
 	req, _ := http.NewRequest("GET", searchURL,nil)
